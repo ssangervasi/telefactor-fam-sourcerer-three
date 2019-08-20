@@ -6,6 +6,7 @@ source 'https://rubygems.org'
 gemspec
 
 group :development do
+  gem 'dry-monads', '~> 1.0'
   gem 'dry-struct', '~> 1.0'
 end
 
