@@ -31,40 +31,31 @@ module Fam
   class << self
     # IMPLEMENT ME
     def add_person(input_path:, output_path:, person_name:)
-      change_tree(input_path, output_path) do |tree|
-        return failure("Person '#{person_name}' already in family") if tree.members.key?(person_name.to_sym)
-
-        tree.add_person(name: person_name.to_sym)
+      using_tree(input_path) do |tree|
+        handle_tree_update(
+          tree.add_person(name: person_name.to_sym),
+          output_path,
+          "Added person: #{person_name}"
+        )
       end
-      success("Added person: #{person_name}")
     end
 
     # IMPLEMENT ME
     def add_parents(input_path:, output_path:, child_name:, parent_names:)
-      change_tree(input_path, output_path) do |tree|
-        members = tree.members
-
-        child = members[child_name.to_sym]
-        return failure("No such person '#{child_name}' in family") if child.nil?
-
-        extra_parents = parent_names.map do |parent_name|
-          members[parent_name.to_sym].tap do |parent|
-            return failure("No such person '#{parent_name}' in family") if parent.nil?
-          end
-        end
-
-        return failure("Child '#{child_name}' can't have more than 2 parents!") if child.parents.size + extra_parents.size > 2
-
-        new_child = child.add_parents(parent_list: extra_parents)
-        tree.new(members: members.merge(child_name.to_sym => new_child))
+      using_tree(input_path) do |tree|
+        handle_tree_update(
+          tree.add_parents(child: child_name.to_sym, parents: parent_names.map(&:to_sym)),
+          output_path,
+          "Added #{parent_names.join(' & ')} as parents of #{child_name}"
+        )
       end
-      success("Added #{parent_names.join(' & ')} as parents of Adam")
     end
 
     # IMPLEMENT ME
     def get_person(input_path:, person_name:)
       using_tree(input_path) do |tree|
-        return failure("No such person '#{person_name}' in family") if tree.members[person_name.to_sym].nil?
+        return failure("No such person '#{person_name}' in family") \
+          if tree.members[person_name.to_sym].nil?
 
         success(person_name)
       end
@@ -103,10 +94,14 @@ module Fam
       yield(tree)
     end
 
-    def change_tree(input_path, output_path, &_block)
-      tree = load_from_file(input_path)
-      updated_tree = yield(tree)
-      save_to_file(updated_tree, output_path) unless output_path.nil?
+    def handle_tree_update(result_either, output_path, success_message)
+      result_either.either(
+        lambda do |tree|
+          save_to_file(tree, output_path)
+          success(success_message)
+        end,
+        ->(failure_message) { failure(failure_message) }
+      )
     end
 
     #####################
