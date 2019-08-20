@@ -5,6 +5,10 @@ source 'https://rubygems.org'
 
 gemspec
 
+group :development do
+  gem 'dry-struct', '~> 1.0'
+end
+
 group :test do
   # Test framework
   gem 'rspec', '~> 3.8'
