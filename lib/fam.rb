@@ -5,8 +5,8 @@ require 'fam/cli/result'
 require 'fam/file'
 
 require 'fam/family/family_tree'
-require 'fam/family/io/tree_writer'
-require 'fam/family/io/tree_reader'
+require 'fam/family/serialization/family_deserializer'
+require 'fam/family/serialization/family_serializer'
 
 module Fam
   # Includes the .success and .failure helpers which return Fam::CLI::Result objects
@@ -23,8 +23,8 @@ module Fam
   #   to save their output. This creates the file, or overwrites if it already exists.
   extend Fam::File::Helpers
 
-  extend Fam::Family::IO::TreeReader
-  extend Fam::Family::IO::TreeWriter
+  extend Fam::Family::Serialization::FamilyDeserializer
+  extend Fam::Family::Serialization::FamilySerializer
 
   # These static methods are the only entrypoint that the CLI has to the application.
   #   So, as long as implementation uses the aruguments correctly and returns either
@@ -74,6 +74,14 @@ module Fam
       convert_result(yield(tree)).tap do |result|
         save_to_file(tree, output_path) if result.success? && !output_path.nil?
       end
+    end
+
+    def load_from_file(input_path)
+      deserialize(input_hash: read(path: input_path))
+    end
+
+    def save_to_file(tree, output_path)
+      write(path: output_path, json_hash: serialize(family: tree))
     end
 
     def convert_result(result_either)
