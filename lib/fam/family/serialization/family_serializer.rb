@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 module Fam::Family::Serialization
-  class FamilySerializer
-    def self.serialize(family:)
+  module FamilySerializer
+    def serialize(family:)
       {}.tap do |mutating_hash|
         family.members.each do |member|
           name = member.first.to_s
