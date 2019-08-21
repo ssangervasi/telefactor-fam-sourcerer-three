@@ -10,7 +10,7 @@ module Fam::Family
     attribute :members, Types::Hash.map(Types::Strict::Symbol, Fam::Family::Person)
 
     def add_person(name:)
-      return Failure("Person '#{name}' already in family") if members.key?(name.to_sym)
+      return Failure("Person '#{name}' already in family") if members.key?(name)
 
       person = Fam::Family::Person.new(name: name, parents: [])
       members[name] = person
@@ -47,13 +47,13 @@ module Fam::Family
       person = members[person_name]
       return person_not_found(person_name) if person.nil?
 
-      grand_parents = person.parents.flat_map(&:parents)
+      family = person.parents
 
-      (0...greatness.to_i).each do
-        grand_parents = grand_parents.flat_map(&:parents)
+      (0..greatness).each do
+        family = family.flat_map(&:parents)
       end
 
-      Success(grand_parents.map(&:name).map(&:to_s).join("\n"))
+      Success(family.map(&:name).map(&:to_s).join("\n"))
     end
 
     private
