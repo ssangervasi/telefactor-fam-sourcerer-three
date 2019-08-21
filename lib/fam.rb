@@ -32,58 +32,42 @@ module Fam
     # IMPLEMENT ME
     def add_person(input_path:, output_path:, person_name:)
       using_tree(input_path) do |tree|
-        handle_tree_update(
-          tree.add_person(name: person_name.to_sym),
-          output_path,
-          "Added person: #{person_name}"
-        )
+        result = tree.add_person(name: person_name.to_sym)
+        save_to_file(tree, output_path) if result.success?
+        convert_result(result)
       end
     end
 
     # IMPLEMENT ME
     def add_parents(input_path:, output_path:, child_name:, parent_names:)
       using_tree(input_path) do |tree|
-        handle_tree_update(
-          tree.add_parents(child: child_name.to_sym, parents: parent_names.map(&:to_sym)),
-          output_path,
-          "Added #{parent_names.join(' & ')} as parents of #{child_name}"
-        )
+        result = tree.add_parents(child: child_name.to_sym, parents: parent_names.map(&:to_sym))
+        save_to_file(tree, output_path) if result.success?
+        convert_result(result)
       end
     end
 
     # IMPLEMENT ME
     def get_person(input_path:, person_name:)
       using_tree(input_path) do |tree|
-        return failure("No such person '#{person_name}' in family") \
-          if tree.members[person_name.to_sym].nil?
-
-        success(person_name)
+        result = tree.get_person(person_name: person_name.to_sym)
+        convert_result(result)
       end
     end
 
     # IMPLEMENT ME
     def get_parents(input_path:, child_name:)
       using_tree(input_path) do |tree|
-        child = tree.members[child_name.to_sym]
-        return failure("No such person '#{child_name}' in family") if child.nil?
-
-        success(child.parents.map(&:name).join("\n"))
+        result = tree.get_parents(person_name: child_name.to_sym)
+        convert_result(result)
       end
     end
 
     # IMPLEMENT ME
     def get_grandparents(input_path:, child_name:, greatness:)
       using_tree(input_path) do |tree|
-        child = tree.members[child_name.to_sym]
-        return failure("No such person '#{child_name}' in family") if child.nil?
-
-        grand_parents = child.parents.flat_map(&:parents)
-
-        (0...greatness.to_i).each do
-          grand_parents = grand_parents.flat_map(&:parents)
-        end
-
-        success(grand_parents.map(&:name).map(&:to_s).join("\n"))
+        result = tree.get_grandparents(person_name: child_name.to_sym, greatness: greatness)
+        convert_result(result)
       end
     end
 
@@ -94,12 +78,9 @@ module Fam
       yield(tree)
     end
 
-    def handle_tree_update(result_either, output_path, success_message)
+    def convert_result(result_either)
       result_either.either(
-        lambda do |tree|
-          save_to_file(tree, output_path)
-          success(success_message)
-        end,
+        ->(success_message) { success(success_message) },
         ->(failure_message) { failure(failure_message) }
       )
     end

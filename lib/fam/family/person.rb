@@ -15,7 +15,13 @@ module Fam::Family
         if parents.size + parent_list.size > 2
 
       @attributes[:parents] += parent_list
-      Success()
+      Success("Added #{format_parents(parent_list)} as parents of #{name}")
+    end
+
+    private
+
+    def format_parents(parent_list)
+      parent_list.map(&:name).map(&:to_s).join(' & ')
     end
   end
 end
