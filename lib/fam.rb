@@ -5,9 +5,8 @@ require 'fam/cli/result'
 require 'fam/file'
 
 require 'fam/family/family_tree'
-
-require 'fam/family/serialization/family_deserializer'
-require 'fam/family/serialization/family_serializer'
+require 'fam/family/io/tree_writer'
+require 'fam/family/io/tree_reader'
 
 module Fam
   # Includes the .success and .failure helpers which return Fam::CLI::Result objects
@@ -33,7 +32,7 @@ module Fam
     def add_person(input_path:, output_path:, person_name:)
       using_tree(input_path) do |tree|
         result = tree.add_person(name: person_name.to_sym)
-        save_to_file(tree, output_path) if result.success?
+        Fam::Family::IO::TreeWriter.save_to_file(tree, output_path) if result.success?
         convert_result(result)
       end
     end
@@ -42,7 +41,7 @@ module Fam
     def add_parents(input_path:, output_path:, child_name:, parent_names:)
       using_tree(input_path) do |tree|
         result = tree.add_parents(child: child_name.to_sym, parents: parent_names.map(&:to_sym))
-        save_to_file(tree, output_path) if result.success?
+        Fam::Family::IO::TreeWriter.save_to_file(tree, output_path) if result.success?
         convert_result(result)
       end
     end
@@ -74,7 +73,7 @@ module Fam
     private
 
     def using_tree(input_path, &_block)
-      tree = load_from_file(input_path)
+      tree = Fam::Family::IO::TreeReader.load_from_file(input_path)
       yield(tree)
     end
 
@@ -83,38 +82,6 @@ module Fam
         ->(success_message) { success(success_message) },
         ->(failure_message) { failure(failure_message) }
       )
-    end
-
-    #####################
-    #     LOAD DATA     #
-    #####################
-
-    def load_from_file(input_path)
-      load_tree(read_hash_from_input_path(input_path))
-    end
-
-    def read_hash_from_input_path(input_path)
-      Fam::File::Reader.create(path: input_path).read
-    end
-
-    def load_tree(input_hash)
-      Fam::Family::Serialization::FamilyDeserializer.deserialize(input_hash: input_hash)
-    end
-
-    #####################
-    #     SAVE DATA     #
-    #####################
-
-    def save_to_file(tree, output_path)
-      write_hash_to_file(serialize_tree(tree), output_path)
-    end
-
-    def serialize_tree(tree)
-      Fam::Family::Serialization::FamilySerializer.serialize(family: tree)
-    end
-
-    def write_hash_to_file(output_hash, output_path)
-      Fam::File::Writer.create(path: output_path).write(json_hash: output_hash)
     end
   end
 end
