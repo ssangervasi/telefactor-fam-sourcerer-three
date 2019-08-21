@@ -66,7 +66,7 @@ module Fam
     # IMPLEMENT ME
     def get_grandparents(input_path:, child_name:, greatness:)
       using_tree(input_path) do |tree|
-        result = tree.get_grandparents(person_name: child_name.to_sym, greatness: greatness)
+        result = tree.get_grandparents(person_name: child_name.to_sym, greatness: greatness.to_i)
         convert_result(result)
       end
     end
