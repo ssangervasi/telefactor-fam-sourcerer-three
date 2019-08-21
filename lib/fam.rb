@@ -23,6 +23,9 @@ module Fam
   #   to save their output. This creates the file, or overwrites if it already exists.
   extend Fam::File::Helpers
 
+  extend Fam::Family::IO::TreeReader
+  extend Fam::Family::IO::TreeWriter
+
   # These static methods are the only entrypoint that the CLI has to the application.
   #   So, as long as implementation uses the aruguments correctly and returns either
   #   `success` or `failure`, you can put whatever you want in the method bodies
@@ -30,51 +33,47 @@ module Fam
   class << self
     # IMPLEMENT ME
     def add_person(input_path:, output_path:, person_name:)
-      using_tree(input_path) do |tree|
-        result = tree.add_person(name: person_name.to_sym)
-        Fam::Family::IO::TreeWriter.save_to_file(tree, output_path) if result.success?
-        convert_result(result)
+      using_tree(input_path, output_path) do |tree|
+        tree.add_person(name: person_name.to_sym)
       end
     end
 
     # IMPLEMENT ME
     def add_parents(input_path:, output_path:, child_name:, parent_names:)
-      using_tree(input_path) do |tree|
-        result = tree.add_parents(child: child_name.to_sym, parents: parent_names.map(&:to_sym))
-        Fam::Family::IO::TreeWriter.save_to_file(tree, output_path) if result.success?
-        convert_result(result)
+      using_tree(input_path, output_path) do |tree|
+        tree.add_parents(child: child_name.to_sym, parents: parent_names.map(&:to_sym))
       end
     end
 
     # IMPLEMENT ME
     def get_person(input_path:, person_name:)
       using_tree(input_path) do |tree|
-        result = tree.get_person(person_name: person_name.to_sym)
-        convert_result(result)
+        tree.get_person(person_name: person_name.to_sym)
       end
     end
 
     # IMPLEMENT ME
     def get_parents(input_path:, child_name:)
       using_tree(input_path) do |tree|
-        result = tree.get_parents(person_name: child_name.to_sym)
-        convert_result(result)
+        tree.get_parents(person_name: child_name.to_sym)
       end
     end
 
     # IMPLEMENT ME
     def get_grandparents(input_path:, child_name:, greatness:)
       using_tree(input_path) do |tree|
-        result = tree.get_grandparents(person_name: child_name.to_sym, greatness: greatness.to_i)
-        convert_result(result)
+        tree.get_grandparents(person_name: child_name.to_sym, greatness: greatness.to_i)
       end
     end
 
     private
 
-    def using_tree(input_path, &_block)
-      tree = Fam::Family::IO::TreeReader.load_from_file(input_path)
-      yield(tree)
+    def using_tree(input_path, output_path = nil, &_block)
+      tree = load_from_file(input_path)
+
+      convert_result(yield(tree)).tap do |result|
+        save_to_file(tree, output_path) if result.success? && !output_path.nil?
+      end
     end
 
     def convert_result(result_either)
