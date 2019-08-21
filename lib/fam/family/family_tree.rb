@@ -14,20 +14,52 @@ module Fam::Family
 
       person = Fam::Family::Person.new(name: name, parents: [])
       members[name] = person
-      Success(self)
+      Success("Added person: #{name}")
     end
 
     def add_parents(child:, parents:)
       child_person = members[child]
-      return Failure("No such person '#{child}' in family") if child_person.nil?
+      return person_not_found(child) if child_person.nil?
 
       parent_persons = parents.map do |parent_name|
         members[parent_name].tap do |parent|
-          return Failure("No such person '#{parent_name}' in family") if parent.nil?
+          return person_not_found(parent_name) if parent.nil?
         end
       end
 
-      child_person.add_parents(parent_list: parent_persons).fmap { self }
+      child_person.add_parents(parent_list: parent_persons)
+    end
+
+    def get_person(person_name:)
+      return person_not_found(person_name) if members[person_name].nil?
+
+      Success(person_name.to_s)
+    end
+
+    def get_parents(person_name:)
+      person = members[person_name]
+      return person_not_found(person_name) if person.nil?
+
+      Success(person.parents.map(&:name).join("\n"))
+    end
+
+    def get_grandparents(person_name:, greatness:)
+      person = members[person_name]
+      return person_not_found(person_name) if person.nil?
+
+      grand_parents = person.parents.flat_map(&:parents)
+
+      (0...greatness.to_i).each do
+        grand_parents = grand_parents.flat_map(&:parents)
+      end
+
+      Success(grand_parents.map(&:name).map(&:to_s).join("\n"))
+    end
+
+    private
+
+    def person_not_found(person_name)
+      Failure("No such person '#{person_name}' in family")
     end
   end
 end
